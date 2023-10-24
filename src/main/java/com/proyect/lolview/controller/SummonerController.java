@@ -1,6 +1,7 @@
 package com.proyect.lolview.controller;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -12,10 +13,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.proyect.lolview.Config;
 import com.proyect.lolview.model.SummonerModel;
 import com.proyect.lolview.serviceImpl.SummonerServiceImpl;
+
+
 
 @RestController
 @RequestMapping("/api")
@@ -23,7 +27,8 @@ public class SummonerController {
 	
 	private final Config config = new Config();
 	
-	public String _baseUrl = config.get_baseUrl();
+	public String _euwBaseUrl = config.get_euwBaseUrl();
+	public String _europeBaseUrl = config.get_europeBaseUrl();
 	public String _apiKey = config.get_apiKey();
 	
 	@Autowired
@@ -39,7 +44,7 @@ public class SummonerController {
 	public ResponseEntity<SummonerModel> getSummonerInfo(@PathVariable String username) {
 	    RestTemplate restTemplate = new RestTemplate();
 
-	    String url = _baseUrl + "/lol/summoner/v4/summoners/by-name/" + username + "?api_key=" + _apiKey;
+	    String url = _euwBaseUrl + "/lol/summoner/v4/summoners/by-name/" + username + "?api_key=" + _apiKey;
 	    System.out.println(url);
 	    ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
@@ -61,6 +66,30 @@ public class SummonerController {
 	            } else {
 	                return ResponseEntity.status(HttpStatus.CONFLICT).body(null); // Usuario ya existe
 	            }
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+	        }
+	    } else {
+	        return ResponseEntity.status(response.getStatusCode()).build();
+	    }
+	}
+	
+	@GetMapping(path = "/lol/getsummonermatches/{summonerPuuid}")
+	public ResponseEntity<List<String>> getSummonerMatches(@PathVariable String summonerPuuid) {
+	    RestTemplate restTemplate = new RestTemplate();
+
+	    String url = _europeBaseUrl + "/lol/match/v5/matches/by-puuid/" + summonerPuuid + "/ids?start=0&count=20&api_key=" + _apiKey;
+	    System.out.println(url);
+	    ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+	    ObjectMapper objectMapper = new ObjectMapper();
+
+	    if (response.getStatusCode().is2xxSuccessful()) {
+	    	String responseBody = response.getBody();
+	        try {
+	        	List<String> summonerMatches = objectMapper.readValue(responseBody, new TypeReference<List<String>>() {});
+
+	        	return ResponseEntity.ok(summonerMatches); 
 	        } catch (IOException e) {
 	            e.printStackTrace();
 	            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

@@ -27,7 +27,7 @@ public class SummonerLeagueController {
 
 	private final Config config = new Config();
 
-	public String _baseUrl = config.get_baseUrl();
+	public String _baseUrl = config.get_euwBaseUrl();
 	public String _apiKey = config.get_apiKey();
 
 	@Autowired

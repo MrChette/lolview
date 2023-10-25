@@ -1,5 +1,7 @@
 package com.proyect.lolview.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,5 +24,21 @@ public class SummonerLeagueModel {
     private boolean inactive;
     private boolean freshBlood;
     private boolean hotStreak;
+    @JsonIgnore
+    private String server;
+    
+    
+	public SummonerLeagueModel(String tier, String summonerName, Integer leaguePoints, String server) {
+		super();
+		this.tier = tier;
+		this.summonerName = summonerName;
+		this.leaguePoints = leaguePoints;
+		this.server = server;
+	}
+
+
+	
+    
+    
 
 }

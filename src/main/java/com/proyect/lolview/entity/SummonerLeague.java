@@ -20,6 +20,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class SummonerLeague {
 	
+	public SummonerLeague(String tier2, String rank2, String summonerName2, Integer leaguePoints2) {
+		// TODO Auto-generated constructor stub
+	}
+
 	@Id
 	@Column(name="leagueId")
 	private String leagueId;

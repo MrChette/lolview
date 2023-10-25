@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.proyect.lolview.Config;
@@ -34,38 +35,37 @@ public class SummonerLeagueController {
 	@Qualifier("summonerLeagueServiceImpl")
 	private SummonerLeagueServiceImpl summonerLeagueService;
 
-	@GetMapping(path = "/lol/getsummonerleague/{summonnerid}")
-	public ResponseEntity<List<SummonerLeagueModel>> getSummonerLeague(@PathVariable String summonnerid) {
-		RestTemplate restTemplate = new RestTemplate();
+	@GetMapping(path = "/lol/getsummonerleague/{summonerId}")
+	public ResponseEntity<List<SummonerLeagueModel>> getSummonerLeague(@PathVariable String summonerId) {
+	    String url = UriComponentsBuilder.fromHttpUrl(_baseUrl)
+	            .path("/lol/league/v4/entries/by-summoner/{summonerId}")
+	            .queryParam("api_key", _apiKey)
+	            .buildAndExpand(summonerId)
+	            .toUriString();
 
-		String url = _baseUrl + "/lol/league/v4/entries/by-summoner/" + summonnerid + "?api_key=" + _apiKey;
+	    System.out.println(url);
 
-		ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+	    try {
+	        ResponseEntity<String> response = new RestTemplate().getForEntity(url, String.class);
 
-		if (response.getStatusCode().is2xxSuccessful()) {
-			ObjectMapper mapper = new ObjectMapper();
-			try {
-				List<SummonerLeagueModel> userLeagues = mapper.readValue(response.getBody(),
-						new TypeReference<List<SummonerLeagueModel>>() {
-						});
+	        if (response.getStatusCode().is2xxSuccessful()) {
+	            ObjectMapper mapper = new ObjectMapper();
+	            List<SummonerLeagueModel> userLeagues = mapper.readValue(response.getBody(),
+	                    new TypeReference<List<SummonerLeagueModel>>() {});
 
-				List<SummonerLeagueModel> result = new ArrayList<>();
+	            List<SummonerLeagueModel> result = new ArrayList<>();
 
-				for (SummonerLeagueModel userLeague : userLeagues) {
-					if (summonerLeagueService.findEntityById(userLeague.getLeagueId()) == null) {
-						summonerLeagueService.addEntity(userLeague);
-						result.add(userLeague);
-					}
-				}
+	            for (SummonerLeagueModel userLeague : userLeagues) {
+	                    result.add(userLeague);
+	            }
 
-				return ResponseEntity.ok(result);
-			} catch (IOException e) {
-				e.printStackTrace();
-				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-			}
-		} else {
-			return ResponseEntity.status(response.getStatusCode()).build();
-		}
+	            return ResponseEntity.ok(result);
+	        }
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    }
+
+	    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 	}
 
 }

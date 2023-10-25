@@ -10,8 +10,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,10 +43,16 @@ public class SummonerController {
 	
 	
 	@GetMapping(path = "/lol/addsummoner/{username}")
-	public ResponseEntity<SummonerModel> getSummonerInfo(@PathVariable String username) {
+	public ResponseEntity<?> getSummonerInfo(@PathVariable String username) {
 	    RestTemplate restTemplate = new RestTemplate();
 
-	    String url = _euwBaseUrl + "/lol/summoner/v4/summoners/by-name/" + username + "?api_key=" + _apiKey;
+	    
+	    String url = UriComponentsBuilder.fromHttpUrl(_euwBaseUrl)
+	            .path("/lol/summoner/v4/summoners/by-name/{username}")
+	            .queryParam("api_key", _apiKey)
+	            .buildAndExpand(username)
+	            .toUriString();
+	    
 	    System.out.println(url);
 	    ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
@@ -57,10 +65,8 @@ public class SummonerController {
 	            if (userService.findEntityById(user.getId()) == null) {
 	                userService.addEntity(user);
 	                
-	                System.out.println(user.getId());
-	                
+	                //ResponseEntity<List<SummonerLeagueModel>> summonerLeagueModel = 
 	                summonerLeagueController.getSummonerLeague(user.getId());
-
 	                
 	                return ResponseEntity.ok(user);
 	            } else {
@@ -75,12 +81,24 @@ public class SummonerController {
 	    }
 	}
 	
-	@GetMapping(path = "/lol/getsummonermatches/{summonerPuuid}")
-	public ResponseEntity<List<String>> getSummonerMatches(@PathVariable String summonerPuuid) {
+	@GetMapping(path = "/lol/getsummonermatches/")
+	public ResponseEntity<List<String>> getSummonerMatches(
+			@RequestParam String summonerPuuid,
+	        @RequestParam(defaultValue = "5") int count
+	        ) {
+
 	    RestTemplate restTemplate = new RestTemplate();
 
-	    String url = _europeBaseUrl + "/lol/match/v5/matches/by-puuid/" + summonerPuuid + "/ids?start=0&count=20&api_key=" + _apiKey;
+	    String url = UriComponentsBuilder.fromHttpUrl(_europeBaseUrl)
+	            .path("/lol/match/v5/matches/by-puuid/{summonerPuuid}/ids")
+	            .queryParam("start", 0)
+	            .queryParam("count", count)
+	            .queryParam("api_key", _apiKey)
+	            .buildAndExpand(summonerPuuid)
+	            .toUriString();
+	    
 	    System.out.println(url);
+	   
 	    ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 	    ObjectMapper objectMapper = new ObjectMapper();
 

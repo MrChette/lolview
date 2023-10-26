@@ -14,8 +14,9 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+	@SuppressWarnings("removal")
 	@Bean
-	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+	SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http.csrf().disable().
 		authorizeHttpRequests((requests) -> requests.		
 				requestMatchers("/**").permitAll().anyRequest().authenticated());

@@ -3,11 +3,11 @@ package com.proyect.lolview.controller;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -25,8 +25,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.proyect.lolview.Config;
+import com.proyect.lolview.entity.Top10Summoner;
 import com.proyect.lolview.model.SummonerModel;
+import com.proyect.lolview.model.Top10SummonerModel;
 import com.proyect.lolview.serviceImpl.SummonerServiceImpl;
+import com.proyect.lolview.serviceImpl.Top10SummonerServiceImpl;
 
 
 
@@ -123,63 +126,6 @@ public class SummonerController {
 	        return ResponseEntity.status(response.getStatusCode()).build();
 	    }
 	}
-	
-	@GetMapping(path= "/lol/gettopten")
-	public ResponseEntity<List<Map<String, Object>>> getTopTen(){
-
-	    String baseUrl = "https://{region}.api.riotgames.com";
-	    List<String> regions = Arrays.asList("BR1","EUN1","EUW1","JP1","KR","LA1","LA2","NA1","OC1","PH2","RU","SG2","TH2","TR1","TW2","VN2");
-	    List<Map<String, Object>> topTenList = new ArrayList<>();
-
-	    RestTemplate restTemplate = new RestTemplate();
-	    ObjectMapper objectMapper = new ObjectMapper();
-
-	    for(String region : regions) {
-	        String url = UriComponentsBuilder.fromHttpUrl(baseUrl)
-	                .path("/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5")
-	                .queryParam("api_key", _apiKey)
-	                .buildAndExpand(region)
-	                .toUriString();
-	        
-	        System.out.println(url);
-	        
-	        try {
-	            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-	            JsonNode root = objectMapper.readTree(response.getBody());
-	            JsonNode entries = root.get("entries");
-
-	            for (JsonNode entry : entries) {
-	                String rank = entry.get("rank").asText();
-	                String summonerName = entry.get("summonerName").asText();
-	                Integer leaguePoints = entry.get("leaguePoints").asInt();
-
-	                Map<String, Object> summonerData = new HashMap<>();
-	                summonerData.put("Server", region.toString());
-	                summonerData.put("rank", rank);
-	                summonerData.put("summonerName", summonerName);
-	                summonerData.put("leaguePoints", leaguePoints);
-
-	                topTenList.add(summonerData);
-	            }
-	        } catch (IOException e) {
-	            e.printStackTrace();
-	        }
-	    }
-
-
-	    // Ordena la lista según leaguePoints (de mayor a menor)
-	    topTenList.sort(Comparator.comparingInt(o -> (int) o.get("leaguePoints")));
-	    Collections.reverse(topTenList);
-
-	    
-
-	    // Obtiene los primeros 10 elementos (top 10)
-	    List<Map<String, Object>> topTen = topTenList.subList(0, Math.min(topTenList.size(), 10));
-
-	    return ResponseEntity.ok(topTen);
-	}
-
-	
 	
 	
 	

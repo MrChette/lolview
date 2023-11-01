@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -45,28 +46,26 @@ public class Top10SummonerController {
 	@GetMapping(path= "/lol/updatetopten")
 	public ResponseEntity<List<Top10Summoner>> getTopTen(){
 		
-		String _baseURL = "https://{region}.api.riotgames.com";
+
 	    List<String> regions = Arrays.asList("BR1","EUN1","EUW1","JP1","KR","LA1","LA2","NA1","OC1","PH2","RU","SG2","TH2","TR1","VN2");
 	    List<Top10Summoner> list = new ArrayList<Top10Summoner>();
 
 	    ExecutorService executor = Executors.newFixedThreadPool(regions.size());
 	    RestTemplate restTemplate = new RestTemplate();
 	    
+
 	    try {
 	        List<Future<?>> futures = new ArrayList<>();
 
 	        for(String region : regions) {
 	        	
 	            futures.add(executor.submit(() -> {
-	                String url = UriComponentsBuilder.fromHttpUrl(_baseURL)
-	                        .path("/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5")
-	                        .queryParam("api_key", _apiKey)
-	                        .buildAndExpand(region)
-	                        .toUriString();
+	            	String url = buildChallengerLeagueUrl(region.toString());
 
-	                System.out.println(url);
 	                long startTime = System.currentTimeMillis();
+	                
 	                ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+	                
 	                long endTime = System.currentTimeMillis(); // Obtener el tiempo después de la solicitud
 	                
 	                long duration = endTime - startTime;
@@ -79,13 +78,8 @@ public class Top10SummonerController {
 	                    JsonNode root = objectMapper.readTree(response.getBody());
 	                    JsonNode entries = root.get("entries");
 
-	                    for (JsonNode entry : entries) {
-	                        String summonerName = entry.get("summonerName").asText();
-	                        String summonerId = entry.get("summonerId").asText();
-	                        Integer leaguePoints = entry.get("leaguePoints").asInt();
-	                        Top10Summoner top10Summoner = new Top10Summoner(summonerId, region.toString(),summonerName, leaguePoints);
-	                        list.add(top10Summoner);
-	                    }
+	                    list.addAll(parseTop10Summoners(entries, region.toString()));
+
 	                } catch (IOException e) {
 	                    e.printStackTrace();
 	                }
@@ -99,7 +93,7 @@ public class Top10SummonerController {
 	    } catch (Exception e) {
 	        e.printStackTrace();
 	    } finally {
-	        executor.shutdown();
+	        executor.shutdown(); // Cuanto termine el proceso matar el executor
 	    }
 
 	    list.sort(Comparator.comparingInt(Top10Summoner::getLeaguePoints).reversed());
@@ -124,6 +118,56 @@ public class Top10SummonerController {
 		List<Top10SummonerModel> sortedList = top10SummonerService.listAll();
 		sortedList.sort(Comparator.comparingInt(Top10SummonerModel::getLeaguePoints).reversed());
 		return ResponseEntity.ok(sortedList);
+	}
+	
+	public enum Region {
+	    BR1, EUN1, EUW1, JP1, KR, LA1, LA2, NA1, OC1, PH2, RU, SG2, TH2, TR1, VN2
+	}
+	@GetMapping(path = "/lol/top10byregion")
+	public ResponseEntity<List<Top10Summoner>> getTopTen(@RequestParam Region region) {
+		RestTemplate restTemplate = new RestTemplate();
+		String url = buildChallengerLeagueUrl(region.toString());
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<Top10Summoner> list = new ArrayList<Top10Summoner>();
+        
+        try {
+            JsonNode root = objectMapper.readTree(response.getBody());
+            JsonNode entries = root.get("entries");
+
+            list.addAll(parseTop10Summoners(entries, region.toString()));
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+	    // Tu lógica para obtener el Top 10 con la región proporcionada
+
+	    return ResponseEntity.ok(list);
+	}
+	
+	public String buildChallengerLeagueUrl(String region) {
+		String _baseURL = "https://{region}.api.riotgames.com";
+	    return UriComponentsBuilder.fromHttpUrl(_baseURL)
+	            .path("/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5")
+	            .queryParam("api_key", _apiKey)
+	            .buildAndExpand(region)
+	            .toUriString();
+	}
+	
+	public List<Top10Summoner> parseTop10Summoners(JsonNode entries, String region) {
+	    List<Top10Summoner> list = new ArrayList<>();
+
+	    for (JsonNode entry : entries) {
+	        String summonerName = entry.get("summonerName").asText();
+	        String summonerId = entry.get("summonerId").asText();
+	        Integer leaguePoints = entry.get("leaguePoints").asInt();
+	        Top10Summoner top10Summoner = new Top10Summoner(summonerId, region, summonerName, leaguePoints);
+	        list.add(top10Summoner);
+	    }
+
+	    return list;
 	}
 	
 	

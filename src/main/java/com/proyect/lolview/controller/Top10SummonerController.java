@@ -43,10 +43,10 @@ public class Top10SummonerController {
 	private Top10SummonerServiceImpl top10SummonerService;
 
 	
+	//Update top10 mundiales de la base de datos
 	@GetMapping(path= "/lol/updatetopten")
 	public ResponseEntity<List<Top10Summoner>> getTopTen(){
 		
-
 	    List<String> regions = Arrays.asList("BR1","EUN1","EUW1","JP1","KR","LA1","LA2","NA1","OC1","PH2","RU","SG2","TH2","TR1","VN2");
 	    List<Top10Summoner> list = new ArrayList<Top10Summoner>();
 
@@ -113,6 +113,7 @@ public class Top10SummonerController {
 		
 	}
 	
+	//Listar top10 mundiales que estan almacenados en la base de datos
 	@GetMapping(path= "/lol/listopten")
 	public ResponseEntity<List<Top10SummonerModel>> listopten(){
 		List<Top10SummonerModel> sortedList = top10SummonerService.listAll();
@@ -120,9 +121,12 @@ public class Top10SummonerController {
 		return ResponseEntity.ok(sortedList);
 	}
 	
+	
+	// Para limitar el RequestParam getTopTen a que solo pueda recibir estos parametros
 	public enum Region {
 	    BR1, EUN1, EUW1, JP1, KR, LA1, LA2, NA1, OC1, PH2, RU, SG2, TH2, TR1, VN2
 	}
+	
 	@GetMapping(path = "/lol/top10byregion")
 	public ResponseEntity<List<Top10Summoner>> getTopTen(@RequestParam Region region) {
 		RestTemplate restTemplate = new RestTemplate();
@@ -142,11 +146,12 @@ public class Top10SummonerController {
         } catch (IOException e) {
             e.printStackTrace();
         }
-	    // Tu lógica para obtener el Top 10 con la región proporcionada
-
 	    return ResponseEntity.ok(list);
 	}
 	
+	
+	
+	//Construir la url dependiendo de la region
 	public String buildChallengerLeagueUrl(String region) {
 		String _baseURL = "https://{region}.api.riotgames.com";
 	    return UriComponentsBuilder.fromHttpUrl(_baseURL)
@@ -156,6 +161,8 @@ public class Top10SummonerController {
 	            .toUriString();
 	}
 	
+	
+	// Parsear los response a Top10Summoner
 	public List<Top10Summoner> parseTop10Summoners(JsonNode entries, String region) {
 	    List<Top10Summoner> list = new ArrayList<>();
 
